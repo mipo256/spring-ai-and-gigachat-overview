@@ -11,8 +11,12 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,7 +56,7 @@ public class SberGigaChatClient implements ChatModel {
     ResponseEntity<ModelResponse> response = gigaChatFeign.prompt(accessToken, new PromptRequest(
             getDefaultOptions().getModel(),
             List.of(
-                new Message("USER", prompt.getContents())
+                new Message(MessageType.USER.getValue(), prompt.getContents())
             ),
             1,
             false,
@@ -65,7 +69,14 @@ public class SberGigaChatClient implements ChatModel {
     checkStatus(response);
 
     // TODO
-    return null;
+    return new ChatResponse(
+        List.of(
+            new Generation(
+                new AssistantMessage("")
+            )
+        ),
+        new ChatResponseMetadata()
+    );
   }
 
   @Override
