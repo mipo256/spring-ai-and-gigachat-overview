@@ -1,9 +1,14 @@
 package io.mpolivaha.service;
 
+import io.mpolivaha.config.GigaChatProperties;
+import io.mpolivaha.service.request.PromptRequest;
+import io.mpolivaha.service.request.PromptRequest.Message;
 import io.mpolivaha.service.response.AccessToken;
 import io.mpolivaha.service.response.Model;
+import io.mpolivaha.service.response.ModelResponse;
 import io.mpolivaha.service.response.ObjectResponse;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -20,7 +25,8 @@ public class SberGigaChatClient implements ChatModel {
 
   private final GigaChatFeign gigaChatFeign;
   private final @Value("${sber.auth.token}") String authToken;
-  private final @Value("${sber.model:use-pro}") Boolean usePro;
+
+  private final GigaChatProperties gigaChatProperties;
 
   private String accessToken;
 
@@ -38,12 +44,33 @@ public class SberGigaChatClient implements ChatModel {
 
   @Override
   public ChatResponse call(Prompt prompt) {
+    String token = Optional
+        .ofNullable(accessToken)
+        .filter(s -> !s.isEmpty())
+        .orElseGet(this::requestToken);
+
+    ResponseEntity<ModelResponse> response = gigaChatFeign.prompt(accessToken, new PromptRequest(
+            getDefaultOptions().getModel(),
+            List.of(
+                new Message("USER", prompt.getContents())
+            ),
+            1,
+            false,
+            getDefaultOptions().getMaxTokens(),
+            getDefaultOptions().getFrequencyPenalty(),
+            0
+        )
+    );
+
+    checkStatus(response);
+
+    // TODO
     return null;
   }
 
   @Override
   public ChatOptions getDefaultOptions() {
-    return null;
+    return new GigaChatOptions(gigaChatProperties);
   }
 
   private static void checkStatus(ResponseEntity<?> accessToken) {
